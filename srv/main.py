@@ -1,9 +1,9 @@
 from bottle import route, run, request, parse_auth, abort, auth_basic
 from string import Template
 import subprocess
-import os, ConfigParser
+import os, configparser
 from passlib.hash import sha256_crypt
-#import ipaddress
+import ipaddress
 
 ZONESFNAME = 'zones.ini'
 USERSFNAME = 'users.ini'
@@ -63,7 +63,7 @@ class ddnsZone:
         p = subprocess.Popen("nsupdate", stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = p.communicate(nsupd)
 
-	if (not stdout == "") or (not stderr == ""):
+        if (not stdout == "") or (not stderr == ""):
             return "dnserr"
         return None
 
@@ -133,36 +133,40 @@ def doUpdate(username, hostnames, ipv4, ipv6):
         if (u.username == username):
             user = u
 
-    #FIXME sanitize ip addresses
+    try:
+        ipv4 = str(ipaddress.IPv4Address(ipv4))
+        ipv6 = str(ipaddress.IPv6Address(ipv6))
+    except ValueError:
+        return "badip"
 
     hostnames = hostnames.split(",")
     for hostname in hostnames:
-	zone = zoneFromHostname(hostname)
-	if zone == None:
-	    return "nohost"
+        zone = zoneFromHostname(hostname)
+    if zone == None:
+        return "nohost"
 
         if not user.ownsHostname(hostname):
             return "nohost"
         
         if not ipv4 == "":
             ret = zone.do_update(hostname, ipv4, 4)
-	    if not ret == None:
+        if not ret == None:
                 return ret
 
         if not ipv6 == "":
             ret = zone.do_update(hostname, ipv6, 6)
-	    if not ret == None:
+        if not ret == None:
                 return ret
 
     return "good"
 
 
 configfiles = [ os.path.join(p, ZONESFNAME) for p in CFGPATHS]
-config = ConfigParser.ConfigParser()
+config = configparser.ConfigParser()
 config.read(configfiles)
 
 usersfiles = [ os.path.join(p, USERSFNAME) for p in CFGPATHS]
-usersC = ConfigParser.ConfigParser()
+usersC = configparser.ConfigParser()
 usersC.read(usersfiles)
 
 ddnsZones = []
