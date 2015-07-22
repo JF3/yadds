@@ -124,6 +124,7 @@ def dyndnsUpdate():
     # FIXME we need a way to adapt the return codes to other interfaces...
     return doUpdate(username, hostnames, ipv4, ipv6)
 
+
 # Here we assume that the user is authenticated but nothing else has been 
 # checked. The idea is, that several interfaces (mimicing different commercial
 # providers) shall use the same internal logic.
@@ -134,8 +135,10 @@ def doUpdate(username, hostnames, ipv4, ipv6):
             user = u
 
     try:
-        ipv4 = str(ipaddress.IPv4Address(ipv4))
-        ipv6 = str(ipaddress.IPv6Address(ipv6))
+        if not ipv4 == "":
+            ipv4 = str(ipaddress.IPv4Address(ipv4))
+        if not ipv6 == "":
+            ipv6 = str(ipaddress.IPv6Address(ipv6))
     except ValueError:
         return "badip"
 
@@ -145,18 +148,18 @@ def doUpdate(username, hostnames, ipv4, ipv6):
     if zone == None:
         return "nohost"
 
-        if not user.ownsHostname(hostname):
-            return "nohost"
-        
-        if not ipv4 == "":
-            ret = zone.do_update(hostname, ipv4, 4)
-        if not ret == None:
-                return ret
+    if not user.ownsHostname(hostname):
+        return "nohost"
 
-        if not ipv6 == "":
-            ret = zone.do_update(hostname, ipv6, 6)
-        if not ret == None:
-                return ret
+    if not ipv4 == "":
+        ret = zone.do_update(hostname, ipv4, 4)
+    if not ret == None:
+            return ret
+
+    if not ipv6 == "":
+        ret = zone.do_update(hostname, ipv6, 6)
+    if not ret == None:
+            return ret
 
     return "good"
 
