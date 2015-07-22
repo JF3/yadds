@@ -3,8 +3,8 @@ from string import Template
 import subprocess
 import os, ConfigParser
 
-CFGNAME     = 'ddns.ini'
-CFGPATHS    = [os.path.join(os.path.dirname(__file__), '../etc/'), ]
+ZONESNAME = 'zones.ini'
+CFGPATHS  = [os.path.join(os.path.dirname(__file__), '../etc/'), ]
 
 
 nsupdate_template = Template(
@@ -90,7 +90,7 @@ def update():
     return hostname
 
 
-configfiles = [ os.path.join(p, CFGNAME) for p in CFGPATHS]
+configfiles = [ os.path.join(p, ZONESNAME) for p in CFGPATHS]
 config = ConfigParser.ConfigParser()
 config.read(configfiles)
 
