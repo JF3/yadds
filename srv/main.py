@@ -153,12 +153,12 @@ def doUpdate(username, hostnames, ipv4, ipv6):
 
     if not ipv4 == "":
         ret = zone.do_update(hostname, ipv4, 4)
-    if not ret == None:
+        if not ret == None:
             return ret
 
     if not ipv6 == "":
         ret = zone.do_update(hostname, ipv6, 6)
-    if not ret == None:
+        if not ret == None:
             return ret
 
     return "good"
