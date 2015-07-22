@@ -2,8 +2,11 @@ from bottle import route, run, request, parse_auth, abort, auth_basic
 from string import Template
 import subprocess
 import os, ConfigParser
+from passlib.hash import sha256_crypt
+#import ipaddress
 
-ZONESNAME = 'zones.ini'
+ZONESFNAME = 'zones.ini'
+USERSFNAME = 'users.ini'
 CFGPATHS  = [os.path.join(os.path.dirname(__file__), '../etc/'), ]
 
 
@@ -56,48 +59,122 @@ class ddnsZone:
               'rr'      : rr }
     
         nsupd = nsupdate_template.substitute(c)
-        print nsupd
-        p = subprocess.Popen("nsupdate", stdin=subprocess.PIPE)
+
+        p = subprocess.Popen("nsupdate", stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = p.communicate(nsupd)
-     
-        # FIXME do error checking
-        return 23
-    
 
+	if (not stdout == "") or (not stderr == ""):
+            return "dnserr"
+        return None
 
-def pw_check(user, pw):
-    #FIXME
-    return True
+class ddnsUser:
+    username  = ""
+    password  = ""
+    hostnames = []
+
+    def initFromConfig (this, config, username):
+        this.username  = username
+        this.password  = config.get(username, 'password')
+        hostnames      = config.get(username, 'hostnames')
+        this.hostnames = hostnames.split(",")
+
+    def ownsHostname (this, hostname):
+        for h in this.hostnames:
+            if (hostname == h):
+                return True
+        return False
+
+    def checkPassword (this, password):
+        return sha256_crypt.verify(password, this.password)
+
+def auth(user, pw):
+    # room for optimization.... (tree/sqlite/...)
+    for u in ddnsUsers:
+        if (u.username == user):
+            return u.checkPassword(pw)
+    return False
+
+def zoneFromHostname (hostname):
+    hnps = hostname.split(".")
+    domain = ""
+    for hnp in hnps[1:]:
+        domain = domain + hnp + "."
+
+    domain = domain[:-1]
+
+    # room for optimization.... (tree/sqlite/...)
+    for z in ddnsZones:
+        if z.zone == domain:
+            return z
+
+    return None
+        
 
 @route('/nic/update')
-@auth_basic(pw_check)
-def update():
+@auth_basic(auth)
+def dyndnsUpdate():
     auth = request.headers.get('Authorization')
-#    if not auth:
-#        abort(401, 'Access denied')
-#
     username, password = parse_auth(auth)
+
 
     hostnames = request.query.hostname
     ipv4 = request.query.myip or ""
     ipv6 = request.query.myip6 or ""
-    
+
+    # FIXME we need a way to adapt the return codes to other interfaces...
+    return doUpdate(username, hostnames, ipv4, ipv6)
+
+# Here we assume that the user is authenticated but nothing else has been 
+# checked. The idea is, that several interfaces (mimicing different commercial
+# providers) shall use the same internal logic.
+def doUpdate(username, hostnames, ipv4, ipv6):
+    user = None
+    for u in ddnsUsers:
+        if (u.username == username):
+            user = u
+
+    #FIXME sanitize ip addresses
+
     hostnames = hostnames.split(",")
-    hostname = hostnames[0]
-    print hostname
-    ddnsZones[0].do_update(hostname, ipv4, 4)
+    for hostname in hostnames:
+	zone = zoneFromHostname(hostname)
+	if zone == None:
+	    return "nohost"
 
-    return hostname
+        if not user.ownsHostname(hostname):
+            return "nohost"
+        
+        if not ipv4 == "":
+            ret = zone.do_update(hostname, ipv4, 4)
+	    if not ret == None:
+                return ret
+
+        if not ipv6 == "":
+            ret = zone.do_update(hostname, ipv6, 6)
+	    if not ret == None:
+                return ret
+
+    return "good"
 
 
-configfiles = [ os.path.join(p, ZONESNAME) for p in CFGPATHS]
+configfiles = [ os.path.join(p, ZONESFNAME) for p in CFGPATHS]
 config = ConfigParser.ConfigParser()
 config.read(configfiles)
+
+usersfiles = [ os.path.join(p, USERSFNAME) for p in CFGPATHS]
+usersC = ConfigParser.ConfigParser()
+usersC.read(usersfiles)
 
 ddnsZones = []
 for s in config.sections():
     d = ddnsZone()
     d.initFromConfig(config, s)
     ddnsZones.append(d)
+
+ddnsUsers = []
+for s in usersC.sections():
+    u = ddnsUser()
+    u.initFromConfig(usersC, s)
+    ddnsUsers.append(u)
 
 run(host='localhost', port=8080)
