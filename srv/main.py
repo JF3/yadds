@@ -30,12 +30,12 @@ class ddnsZone:
     
     #zonename is the name of the section
     def initFromConfig(this, config, zonename):
-        zone    = zonename
-        server  = config.get(zonename, 'server')
-        keyname = config.get(zonename, 'keyname')
-        keyalgo = config.get(zonename, 'keyalgo')
-        key     = config.get(zonename, 'key')
-        ttl     = config.get(zonename, 'ttl')
+        this.zone    = zonename
+        this.server  = config.get(zonename, 'server')
+        this.keyname = config.get(zonename, 'keyname')
+        this.keyalgo = config.get(zonename, 'keyalgo')
+        this.key     = config.get(zonename, 'key')
+        this.ttl     = config.get(zonename, 'ttl')
 
     def do_update(this, host, ip, ipv):
         if (ipv == 4):
