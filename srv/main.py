@@ -58,12 +58,17 @@ class ddnsZone:
               'ip'      : ip,
               'rr'      : rr }
     
-        nsupd = nsupdate_template.substitute(c)
+        nsupd  = nsupdate_template.substitute(c)
+        nsupdb = nsupd.encode(encoding='ascii')
 
-        p = subprocess.Popen("nsupdate", stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = p.communicate(nsupd)
+        p = subprocess.Popen("nsupdate", stdin  = subprocess.PIPE,
+                                         stdout = subprocess.PIPE,
+                                         stderr = subprocess.PIPE)
+        stdout, stderr = p.communicate(input=nsupdb)
 
-        if (not stdout == "") or (not stderr == ""):
+        if (not stdout == b'') or (not stderr == b''):
+            print(stderr)
+            print(stdout)
             return "dnserr"
         return None
 
