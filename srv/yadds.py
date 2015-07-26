@@ -115,4 +115,10 @@ for s in usersC.sections():
     u.initFromConfig(usersC, s)
     ddnsUsers.append(u)
 
-run(host='localhost', port=8080)
+
+#@route('/')
+#def hello():
+#        return "Hello World!"
+
+#run(host='localhost', port=8080)
+#application = default_app()
