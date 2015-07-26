@@ -40,6 +40,20 @@ class ddnsZone:
         this.key     = config.get(zonename, 'key')
         this.ttl     = config.get(zonename, 'ttl')
 
+    def callNsupdate(this, cmds):
+        cmdsB = cmds.encode(encoding='ascii')
+
+        p = subprocess.Popen("nsupdate", stdin  = subprocess.PIPE,
+                                         stdout = subprocess.PIPE,
+                                         stderr = subprocess.PIPE)
+        stdout, stderr = p.communicate(input=cmdsB)
+
+        if (not stdout == b'') or (not stderr == b''):
+            print(stderr)
+            print(stdout)
+            return "dnserr"
+        return None
+
     def do_update(this, host, ip, ipv):
         if (ipv == 4):
             rr = "A"
@@ -59,18 +73,9 @@ class ddnsZone:
               'rr'      : rr }
     
         nsupd  = nsupdate_template.substitute(c)
-        nsupdb = nsupd.encode(encoding='ascii')
 
-        p = subprocess.Popen("nsupdate", stdin  = subprocess.PIPE,
-                                         stdout = subprocess.PIPE,
-                                         stderr = subprocess.PIPE)
-        stdout, stderr = p.communicate(input=nsupdb)
+        return this.callNsupdate(nsupd)
 
-        if (not stdout == b'') or (not stderr == b''):
-            print(stderr)
-            print(stdout)
-            return "dnserr"
-        return None
 
 class ddnsUser:
     username  = ""
@@ -138,6 +143,10 @@ def doUpdate(username, hostnames, ipv4, ipv6):
     for u in ddnsUsers:
         if (u.username == username):
             user = u
+
+    # what about ipv6?
+    if (ipv4 == "auto"):
+        ipv4 = request.environ.get('REMOTE_ADDR')
 
     try:
         if not ipv4 == "":
