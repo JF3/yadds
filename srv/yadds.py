@@ -1,103 +1,20 @@
-from bottle import route, run, request, parse_auth, abort, auth_basic
-from string import Template
-import subprocess
+from bottle import route, run, request, parse_auth, abort, auth_basic, Bottle, default_app, error
 import os, configparser
 from passlib.hash import sha256_crypt
 import ipaddress
 
+os.chdir(os.path.dirname(__file__))
+import sys
+sys.path.append(os.path.dirname(__file__))
+
+from ddnsZone import *
+from ddnsUser import *
+
 ZONESFNAME = 'zones.ini'
 USERSFNAME = 'users.ini'
-CFGPATHS  = [os.path.join(os.path.dirname(__file__), '../etc/'), ]
+CFGPATHS   = [os.path.join(os.path.dirname(__file__), '../etc/'), ]
 
-
-nsupdate_template = Template(
-"""
-server $server
-key $keyalgo:$keyname $key
-zone $zone
-update delete $host $rr
-update add $host $ttl $rr $ip
-send
-"""
-)
-
-
-
-class ddnsZone:
-    server  = ""
-    keyname = ""
-    keyalgo = ""
-    key     = ""
-    zone    = ""
-    ttl     = 60
-    
-    #zonename is the name of the section
-    def initFromConfig(this, config, zonename):
-        this.zone    = zonename
-        this.server  = config.get(zonename, 'server')
-        this.keyname = config.get(zonename, 'keyname')
-        this.keyalgo = config.get(zonename, 'keyalgo')
-        this.key     = config.get(zonename, 'key')
-        this.ttl     = config.get(zonename, 'ttl')
-
-    def callNsupdate(this, cmds):
-        cmdsB = cmds.encode(encoding='ascii')
-
-        p = subprocess.Popen("nsupdate", stdin  = subprocess.PIPE,
-                                         stdout = subprocess.PIPE,
-                                         stderr = subprocess.PIPE)
-        stdout, stderr = p.communicate(input=cmdsB)
-
-        if (not stdout == b'') or (not stderr == b''):
-            print(stderr)
-            print(stdout)
-            return "dnserr"
-        return None
-
-    def do_update(this, host, ip, ipv):
-        if (ipv == 4):
-            rr = "A"
-        elif (ipv == 6):
-            rr = "AAAA"
-        else:
-            return "error: "+str(ipv)
-    
-        c = { 'server'  : this.server,
-              'keyname' : this.keyname,
-              'keyalgo' : this.keyalgo,
-              'key'     : this.key,
-              'zone'    : this.zone,
-              'ttl'     : this.ttl,
-              'host'    : host,
-              'ip'      : ip,
-              'rr'      : rr }
-    
-        nsupd  = nsupdate_template.substitute(c)
-
-        return this.callNsupdate(nsupd)
-
-
-class ddnsUser:
-    username  = ""
-    password  = ""
-    hostnames = []
-
-    def initFromConfig (this, config, username):
-        this.username  = username
-        this.password  = config.get(username, 'password')
-        hostnames      = config.get(username, 'hostnames')
-        this.hostnames = hostnames.split(",")
-
-    def ownsHostname (this, hostname):
-        for h in this.hostnames:
-            if (hostname == h):
-                return True
-        return False
-
-    def checkPassword (this, password):
-        return sha256_crypt.verify(password, this.password)
-
-def auth(user, pw):
+def myAuth(user, pw):
     # room for optimization.... (tree/sqlite/...)
     for u in ddnsUsers:
         if (u.username == user):
@@ -121,7 +38,7 @@ def zoneFromHostname (hostname):
         
 
 @route('/nic/update')
-@auth_basic(auth)
+@auth_basic(myAuth)
 def dyndnsUpdate():
     auth = request.headers.get('Authorization')
     username, password = parse_auth(auth)
