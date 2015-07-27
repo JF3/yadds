@@ -1,2 +1,4 @@
 # keep your config private...
 etc/*.ini
+
+srv/__pycache__
