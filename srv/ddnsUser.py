@@ -1,6 +1,6 @@
 from passlib.hash import sha256_crypt
 
-reservedHostnames = [ "ns1", "update" ]
+reservedHostnames = [ "ns1", "update", "checkip" ]
 
 class ddnsUser:
     username  = ""
@@ -15,8 +15,9 @@ class ddnsUser:
 
     def ownsHostname (this, hostname):
         # FIXME There might a better place to do this.
+        h0 = hostname.split(".")[0]
         for r in reservedHostnames:
-            if (hostname == r):
+            if (h0 == r):
                 return False
 
         for h in this.hostnames:
