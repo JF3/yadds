@@ -94,31 +94,57 @@ def doUpdate(username, hostnames, ipv4, ipv6):
 
     return "good"
 
+@route('/private/reload')
+def triggerReadConfig ():
+    ip = request.environ.get('REMOTE_ADDR')
 
-configfiles = [ os.path.join(p, ZONESFNAME) for p in CFGPATHS]
-config = configparser.ConfigParser()
-config.read(configfiles)
+    if (ip == "127.0.0.1" or ip == "::1"):
+        readConfig()
+        return "done"
+    else:
+        abort(404, ip)
 
-usersfiles = [ os.path.join(p, USERSFNAME) for p in CFGPATHS]
-usersC = configparser.ConfigParser()
-usersC.read(usersfiles)
 
 ddnsZones = []
-for s in config.sections():
-    d = ddnsZone()
-    d.initFromConfig(config, s)
-    ddnsZones.append(d)
-
 ddnsUsers = []
-for s in usersC.sections():
-    u = ddnsUser()
-    u.initFromConfig(usersC, s)
-    ddnsUsers.append(u)
+
+def readConfig ():
+    del ddnsZones[:]
+    del ddnsUsers[:]
+
+    configfiles = [ os.path.join(p, ZONESFNAME) for p in CFGPATHS]
+    config = configparser.ConfigParser()
+    config.read(configfiles)
+    
+    usersfiles = [ os.path.join(p, USERSFNAME) for p in CFGPATHS]
+    usersC = configparser.ConfigParser()
+    usersC.read(usersfiles)
+    
+    for s in config.sections():
+        d = ddnsZone()
+        d.initFromConfig(config, s)
+        ddnsZones.append(d)
+    
+    for s in usersC.sections():
+        u = ddnsUser()
+        u.initFromConfig(usersC, s)
+        ddnsUsers.append(u)
+
+readConfig()
+
+def checkip ():
+    ip = request.environ.get('REMOTE_ADDR')
+    return ip
 
 
-#@route('/')
-#def hello():
-#        return "Hello World!"
+@route('/')
+def slash ():
+    up = request.urlparts
+    h  = up.hostname.split(".")[0]
+    if (h == "checkip" or h == "checkipv6"):
+        return checkip()
+    else:
+        abort(404, "")
 
 #run(host='localhost', port=8080)
 #application = default_app()
