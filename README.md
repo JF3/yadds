@@ -20,8 +20,19 @@ and a lot of dependencies.
 Setup
 =====
 
-WIP
+```
+	WSGIDaemonProcess yadds user=www-data group=www-data processes=1 threads=5 home=/var/www/yadds/srv/
+	WSGIScriptAlias / /var/www/yadds/srv/yadds.wsgi
 
+	<Directory /var/www/yadds/srv>
+		WSGIProcessGroup yadds
+		WSGIApplicationGroup %{GLOBAL}
+                WSGIPassAuthorization On
+        	Order deny,allow
+	        Allow from all
+	</Directory>
+```
+WIP
 
 Client configuration
 ====================
