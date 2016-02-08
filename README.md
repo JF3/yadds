@@ -20,6 +20,7 @@ and a lot of dependencies.
 Setup
 =====
 
+ * Apache:
 ```
 	WSGIDaemonProcess yadds user=www-data group=www-data processes=1 threads=5 home=/var/www/yadds/srv/
 	WSGIScriptAlias / /var/www/yadds/srv/yadds.wsgi
@@ -32,6 +33,13 @@ Setup
 	        Allow from all
 	</Directory>
 ```
+http://bottlepy.org/docs/dev/deployment.html
+
+ * BIND:
+```
+dnssec-keygen -a HMAC-SHA512 -b 512 -n HOST dyn.example.com
+```
+
 WIP
 
 Client configuration

@@ -1,0 +1,27 @@
+//
+// Do any local configuration here
+//
+
+// Consider adding the 1918 zones here, if they are not used in your
+// organization
+//include "/etc/bind/zones.rfc1918";
+
+
+// get key with
+// /usr/sbin/dnssec-keygen -a HMAC-SHA512 -b 512 -n HOST dyn.example.com
+
+key ddns-update-key {
+  algorithm hmac-sha512;
+  secret "asdasdasdasd==";
+};
+ 
+zone "dyn.example.com" IN {
+  type master;
+  file "db.dyn.example.com";
+  allow-query { any; };
+  allow-transfer { none; };
+  update-policy { grant ddns-update-key wildcard *.dyn.example.com. A AAAA; };
+  journal "/var/cache/bind/db.dyn.example.com.jnl";
+};
+
+
