@@ -39,6 +39,7 @@ http://bottlepy.org/docs/dev/deployment.html
 ```
 dnssec-keygen -a HMAC-SHA512 -b 512 -n HOST dyn.example.com
 ```
+and get the content of the .key file.
 
 WIP
 
