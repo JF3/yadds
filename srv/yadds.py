@@ -33,6 +33,9 @@ def zoneFromHostname (hostname):
     for z in ddnsZones:
         if z.zone == domain:
             return z
+	# needed for updating non sub domains
+        if hostname == z.zone:
+            return z
 
     return None
         
