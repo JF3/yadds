@@ -50,7 +50,7 @@ Client configuration
  * FritzBox:
 Use the userdefined provider and the following update url:
 ```
-update.dyn.example.com/nic/update?hostname=<domain>&myip=<ipaddr>
+update.dyn.example.com/nic/update?hostname=<domain>&myip=<ipaddr>&myip6=<ip6addr>
 ```
  * ddclient:
 ```
