@@ -65,8 +65,14 @@ def doUpdate(username, hostnames, ipv4, ipv6):
             user = u
 
     # what about ipv6?
-    if (ipv4 == "auto"):
-        ipv4 = request.environ.get('REMOTE_ADDR')
+    if (ipv4 == "auto" or ipv6 == "auto"):
+        ip = request.environ.get('REMOTE_ADDR')
+        if "." in ip:
+            ipv4 = ip
+            ipv6 = ""
+        else:
+            ipv6 = ip
+            ipv4 = ""
 
     try:
         if not ipv4 == "":
@@ -76,6 +82,7 @@ def doUpdate(username, hostnames, ipv4, ipv6):
     except ValueError:
         return "badip"
 
+    noop = True
     hostnames = hostnames.split(",")
     for hostname in hostnames:
         zone = zoneFromHostname(hostname)
@@ -87,15 +94,19 @@ def doUpdate(username, hostnames, ipv4, ipv6):
 
         if not ipv4 == "":
             ret = zone.do_update(hostname, ipv4, 4)
+            noop = False
             if not ret == None:
                 return ret
 
         if not ipv6 == "":
             ret = zone.do_update(hostname, ipv6, 6)
+            noop = False
             if not ret == None:
                 return ret
-
-    return "good"
+    if not noop:
+        return "good"
+    else:
+        return "noop"
 
 @route('/private/reload')
 def triggerReadConfig ():
